@@ -1,5 +1,4 @@
-package ca.mcgill.ecse211.localization;
-
+package ca.mcgill.ecse211.zipline;
 
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
@@ -8,12 +7,12 @@ public class Odometer extends Thread {
 	private double x;
 	private double y;
 	private double theta;
-	
-	//previous tacho count
+
+	// previous tacho count
 	private int leftMotorTachoCount;
 	private int rightMotorTachoCount;
-	
-	//instance of motors
+
+	// instance of motors
 	private EV3LargeRegulatedMotor leftMotor;
 	private EV3LargeRegulatedMotor rightMotor;
 
@@ -40,32 +39,32 @@ public class Odometer extends Thread {
 		while (true) {
 			updateStart = System.currentTimeMillis();
 
-			//get value of tacho count for distance calculation
+			// get value of tacho count for distance calculation
 			int currTachoR = rightMotor.getTachoCount();
 			int currTachoL = leftMotor.getTachoCount();
 
-			//calculate distance of each wheel 
-			//dist = 2*PI*wheelRadius*wheelRotation/360
-			double distR = Math.PI * LocalizationLab.WHEEL_RADIUS * (currTachoR - rightMotorTachoCount) / 180;
-			double distL = Math.PI * LocalizationLab.WHEEL_RADIUS * (currTachoL - leftMotorTachoCount) / 180;
-			//calculate change in theta and center disctance
+			// calculate distance of each wheel
+			// dist = 2*PI*wheelRadius*wheelRotation/360
+			double distR = Math.PI * ZiplineLab.WHEEL_RADIUS * (currTachoR - rightMotorTachoCount) / 180;
+			double distL = Math.PI * ZiplineLab.WHEEL_RADIUS * (currTachoL - leftMotorTachoCount) / 180;
+			// calculate change in theta and center disctance
 			double deltaD = .5 * (distR + distL);
-			double deltaT = (distL - distR) / LocalizationLab.TRACK;
+			double deltaT = (distL - distR) / ZiplineLab.TRACK;
 
 			synchronized (lock) {
-				//set all values in sync block to avoid race conditions
+				// set all values in sync block to avoid race conditions
 				rightMotorTachoCount = currTachoR;
 				leftMotorTachoCount = currTachoL;
 
 				theta += deltaT;
-				
-				//correction so theta is never negative
-				if(theta > 2*Math.PI) 
-					theta += -(2*Math.PI);
-				else if(theta < 0)
-					theta += 2*Math.PI;
-					
-				//calculate change in x and y
+
+				// correction so theta is never negative
+				if (theta > 2 * Math.PI)
+					theta += -(2 * Math.PI);
+				else if (theta < 0)
+					theta += 2 * Math.PI;
+
+				// calculate change in x and y
 				double dX = deltaD * Math.sin(theta);
 				double dY = deltaD * Math.cos(theta);
 

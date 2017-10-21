@@ -1,4 +1,4 @@
-package ca.mcgill.ecse211.localization;
+package ca.mcgill.ecse211.zipline;
 
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
@@ -27,15 +27,15 @@ public class Navigation extends Thread {
 
 		leftMotor.stop(true);
 		rightMotor.stop(true);
-		
+
 	}
 
 	/**
-	 * This method causes the robot to travel to the absolute field location (x,
-	 * y) ,specified in tile points.This method should continuously call
-	 * turnTo(double theta) and then set the motor speed to forward(straight).
-	 * This will make sure that your heading is updated until you reach your
-	 * exact goal. This method will pool the odometer for information.
+	 * This method causes the robot to travel to the absolute field location (x, y)
+	 * ,specified in tile points.This method should continuously call turnTo(double
+	 * theta) and then set the motor speed to forward(straight). This will make sure
+	 * that your heading is updated until you reach your exact goal. This method
+	 * will pool the odometer for information.
 	 * 
 	 * @param x
 	 *            The new x destination of the robot
@@ -53,8 +53,8 @@ public class Navigation extends Thread {
 
 		// calculating the information needed (destination - current) for both y
 		// and x, in order to calculate the minimum angle using arctan
-		double deltaX = (x * LocalizationLab.TILE_LENGTH) - currX;
-		double deltaY = (y * LocalizationLab.TILE_LENGTH) - currY;
+		double deltaX = (x * ZiplineLab.TILE_LENGTH) - currX;
+		double deltaY = (y * ZiplineLab.TILE_LENGTH) - currY;
 
 		// calculating the minimum angle using Math.atan2 method
 		double deltaTheta = Math.atan2(deltaX, deltaY) - currTheta;
@@ -73,8 +73,8 @@ public class Navigation extends Thread {
 		leftMotor.setSpeed(FORWARD_SPEED);
 		rightMotor.setSpeed(FORWARD_SPEED);
 
-		rightMotor.rotate(convertDistance(LocalizationLab.WHEEL_RADIUS, distToTravel), true);
-		leftMotor.rotate(convertDistance(LocalizationLab.WHEEL_RADIUS, distToTravel), false);
+		rightMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), true);
+		leftMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), false);
 
 		leftMotor.stop(true);
 		rightMotor.stop(true);
@@ -82,13 +82,13 @@ public class Navigation extends Thread {
 	}
 
 	/**
-	 * This method takes an angle theta as input. It starts by setting the speed
-	 * of both motors. The angle is between -360 and 360 degrees, but since this
-	 * methods should always make the robot turn with the minimum angle
-	 * possible, theta should be updated. If theta is greater than 180 degrees,
-	 * instead of turning positively, the robot turns negatively by an angle of
-	 * theta - 360. And if theta is less than or equal to -180, instead of
-	 * turning negatively, the robot turns positevly by an angle of theta + 360.
+	 * This method takes an angle theta as input. It starts by setting the speed of
+	 * both motors. The angle is between -360 and 360 degrees, but since this
+	 * methods should always make the robot turn with the minimum angle possible,
+	 * theta should be updated. If theta is greater than 180 degrees, instead of
+	 * turning positively, the robot turns negatively by an angle of theta - 360.
+	 * And if theta is less than or equal to -180, instead of turning negatively,
+	 * the robot turns positevly by an angle of theta + 360.
 	 * 
 	 * @param theta
 	 *            The angle by which the cart should turn.
@@ -109,13 +109,13 @@ public class Navigation extends Thread {
 
 		// turn to the left if angle is negative
 		if (theta < 0) {
-			leftMotor.rotate(-convertAngle(LocalizationLab.WHEEL_RADIUS, LocalizationLab.TRACK, -theta), true);
-			rightMotor.rotate(convertAngle(LocalizationLab.WHEEL_RADIUS, LocalizationLab.TRACK, -theta), false);
+			leftMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, -theta), true);
+			rightMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, -theta), false);
 		}
 		// turn to the right if angle is positive
 		else {
-			leftMotor.rotate(convertAngle(LocalizationLab.WHEEL_RADIUS, LocalizationLab.TRACK, theta), true);
-			rightMotor.rotate(-convertAngle(LocalizationLab.WHEEL_RADIUS, LocalizationLab.TRACK, theta), false);
+			leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, theta), true);
+			rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, theta), false);
 		}
 
 	}
