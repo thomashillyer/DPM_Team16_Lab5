@@ -43,8 +43,8 @@ public class ZiplineLab {
 
 		Odometer odometer = new Odometer(leftMotor, rightMotor);
 
-		final TextLCD t = LocalEV3.get().getTextLCD();
-		OdometryDisplay disp = new OdometryDisplay(odometer, t);
+		final TextLCD screen = LocalEV3.get().getTextLCD();
+		OdometryDisplay odoDispl = new OdometryDisplay(odometer, screen);
 		SensorModes usSensor = new EV3UltrasonicSensor(usPort); // usSensor is the instance
 		SampleProvider usDistance = usSensor.getMode("Distance"); // usDistance provides samples from
 																	// this instance
@@ -53,7 +53,7 @@ public class ZiplineLab {
 		Navigation nav = new Navigation(odometer, leftMotor, rightMotor);
 
 		// LightLocalizer lu = new LightLocalizer(odometer, leftMotor, rightMotor, nav);
-		LightLocalization lu = new LightLocalization(leftMotor, rightMotor, odometer, nav);
+		LightLocalization lightLocal = new LightLocalization(leftMotor, rightMotor, odometer, nav);
 
 		// LightPoller lPoller = new LightPoller(lu);
 
@@ -61,7 +61,7 @@ public class ZiplineLab {
 		// rightMotor, leftMotor);
 		// UltrasonicLocalizer ul = new UltrasonicLocalizer(odometer, lu, rightMotor,
 		// leftMotor);
-		UltrasonicLocalization ul = new UltrasonicLocalization(leftMotor, rightMotor, odometer);
+		UltrasonicLocalization usLocal = new UltrasonicLocalization(leftMotor, rightMotor, odometer);
 		do {
 			printMenu(); // Set up the display on the EV3 screen
 
@@ -70,13 +70,13 @@ public class ZiplineLab {
 
 		switch (option) {
 		case Button.ID_LEFT:
-			UltrasonicPoller usPoller = new UltrasonicPoller(usSensor, usData, ul);
+			UltrasonicPoller usPoller = new UltrasonicPoller(usSensor, usData, usLocal);
 			odometer.start();
 			usPoller.start();
-			disp.start();
-			t.clear();
-			ul.start();
-			lu.start();
+			odoDispl.start();
+			screen.clear();
+			usLocal.start();
+			lightLocal.start();
 			// calibration purposes
 			/*
 			 * leftMotor.setSpeed(ROTATIONSPEED); rightMotor.setSpeed(ROTATIONSPEED);
@@ -87,14 +87,14 @@ public class ZiplineLab {
 			 */
 			break;
 		case Button.ID_RIGHT:
-			UltrasonicPoller usPoll = new UltrasonicPoller(usSensor, usData, ul);
+			UltrasonicPoller usPoll = new UltrasonicPoller(usSensor, usData, usLocal);
 			odometer.start();
 			usPoll.start();
-			disp.start();
-			t.clear();
-			ul.start();
+			odoDispl.start();
+			screen.clear();
+			usLocal.start();
 			Button.waitForAnyPress();
-			lu.start();
+			lightLocal.start();
 			break;
 		default:
 			System.out.println("Error - invalid button"); // None of the above - abort
