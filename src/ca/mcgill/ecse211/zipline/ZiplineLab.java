@@ -41,7 +41,6 @@ public class ZiplineLab {
 
 		int option = 0;
 
-		int buttonChoice;
 		Odometer odometer = new Odometer(leftMotor, rightMotor);
 
 		final TextLCD t = LocalEV3.get().getTextLCD();
@@ -78,6 +77,7 @@ public class ZiplineLab {
 			t.clear();
 			ul.start();
 			lu.start();
+			// calibration purposes
 			/*
 			 * leftMotor.setSpeed(ROTATIONSPEED); rightMotor.setSpeed(ROTATIONSPEED);
 			 * leftMotor.rotate(ZiplineLab.convertAngle(ZiplineLab.WHEEL_RADIUS,

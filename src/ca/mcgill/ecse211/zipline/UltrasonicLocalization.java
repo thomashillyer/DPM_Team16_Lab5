@@ -7,8 +7,8 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
 public class UltrasonicLocalization extends Thread implements UltrasonicController {
 
-	private final int horizontalConstant = 30;
-	private final int horizatonMargin = 1;
+	private final int HORIZONTAL_CONST = 40;
+	private final int HORIZONTAL_MARGIN = 2;
 
 	private static double alphaAngle = 0.0;
 	private static double betaAngle = 0.0;
@@ -66,13 +66,13 @@ public class UltrasonicLocalization extends Thread implements UltrasonicControll
 		 */
 		while ((rightMotor.isMoving() && leftMotor.isMoving())) {
 
-			if (!fallingEdgeDetected && (this.distanceUS <= horizontalConstant + horizatonMargin)
+			if (!fallingEdgeDetected && (this.distanceUS <= HORIZONTAL_CONST + HORIZONTAL_MARGIN)
 					&& (this.distanceUS < this.previousDistance)) {
 				alphaAngle = odometer.getTheta();
 				Sound.beep();
 				fallingEdgeDetected = true;
 
-			} else if (fallingEdgeDetected && (this.distanceUS > horizontalConstant - horizatonMargin)
+			} else if (fallingEdgeDetected && (this.distanceUS > HORIZONTAL_CONST - HORIZONTAL_MARGIN)
 					&& (this.distanceUS > this.previousDistance)) {
 				betaAngle = odometer.getTheta();
 				Sound.beep();
