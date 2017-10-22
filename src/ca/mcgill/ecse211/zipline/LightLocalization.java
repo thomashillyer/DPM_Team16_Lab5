@@ -34,14 +34,24 @@ public class LightLocalization extends Thread {
 	private double thetax, thetay;
 	private double x, y;
 	private double deltaThetaY;
+	
+	private int x0;
+	private int y0;
+	private int xC;
+	private int yC;
+	private int corner;
 
 	public LightLocalization(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, Odometer odometer,
-			Navigation nav) {
+			Navigation nav, int[] points) {
 		this.leftMotor = leftMotor;
 		this.rightMotor = rightMotor;
 		this.odometer = odometer;
 		this.nav = nav;
-		// navigation = new Navigation(odometer, leftMotor, rightMotor);
+		x0 = points[0];
+		y0 = points[1];
+		xC = points[2];
+		yC = points[3];
+		corner = points[4];
 	}
 
 	public void run() {
@@ -74,12 +84,29 @@ public class LightLocalization extends Thread {
 		nav.travelTo(0, 0);
 
 		// wait until the robot reached (0 ,0)
-		while ((rightMotor.isMoving() && leftMotor.isMoving()))
-			;
+		while ((rightMotor.isMoving() && leftMotor.isMoving()));
 
 		// let the robot head north
 		nav.turnTo(-odometer.getTheta());
-
+		
+		//once robot adjusts to its relative (0,0)
+		//change the actual odometer x and y to what the board is supposed to be
+		//EX. if at corner 1 the relative (0,0) is actually (7,1)
+		if(corner == 0) {
+			odometer.setX(ZiplineLab.TILE_LENGTH);
+			odometer.setY(ZiplineLab.TILE_LENGTH);
+		}else if(corner == 1) {
+			odometer.setX(7*ZiplineLab.TILE_LENGTH);
+			odometer.setY(ZiplineLab.TILE_LENGTH);
+		}else if(corner == 2) {
+			odometer.setX(7*ZiplineLab.TILE_LENGTH);
+			odometer.setY(7*ZiplineLab.TILE_LENGTH);
+		} else if(corner == 3) {
+			odometer.setX(ZiplineLab.TILE_LENGTH);
+			odometer.setY(7*ZiplineLab.TILE_LENGTH);
+		}
+		
+		nav.travelTo(x0, y0);
 	}
 
 	/**

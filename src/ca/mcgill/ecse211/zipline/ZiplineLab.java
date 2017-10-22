@@ -59,7 +59,8 @@ public class ZiplineLab {
 		Navigation nav = new Navigation(odometer, leftMotor, rightMotor);
 
 		// LightLocalizer lu = new LightLocalizer(odometer, leftMotor, rightMotor, nav);
-		LightLocalization lightLocal = new LightLocalization(leftMotor, rightMotor, odometer, nav);
+		int[] points = {x0,y0,xC,yC,corner};
+		LightLocalization lightLocal = new LightLocalization(leftMotor, rightMotor, odometer, nav, points);
 
 		// LightPoller lPoller = new LightPoller(lu);
 
@@ -115,25 +116,6 @@ public class ZiplineLab {
 		boolean enter = false;
 		t.clear();
 		int counter = 0;
-//		t.drawString("X0: ", 0, 0);
-//		while(!enter) {
-//			int buttonPressed = Button.waitForAnyPress();
-//			if(buttonPressed != Button.ID_ENTER) {
-//				if(buttonPressed == Button.ID_DOWN && counter == 0) {
-//					counter = 0;
-//				}else if (buttonPressed == Button.ID_DOWN && counter > 0) {
-//					counter--;
-//				}else if (buttonPressed == Button.ID_UP && counter == 8) {
-//						counter = 8;
-//				} else if(counter < 8) {
-//						counter++;
-//				}
-//				t.drawInt(counter, 3, 0);
-//			} else {
-//				x0 = counter;
-//				enter = true;
-//			}
-//		}
 		
 		printXY(x0, "X0: ", 0, 0);
 		printXY(y0, "Y0: ", 0, 1);
@@ -152,7 +134,7 @@ public class ZiplineLab {
 					counter--;
 				}else if (buttonPressed == Button.ID_UP && counter == 3) {
 						counter = 3;
-				} else if(buttonPressed == Button.ID_UP && counter < 4) {
+				} else if(buttonPressed == Button.ID_UP && counter < 3) {
 						counter++;
 				}
 				t.drawInt(counter, 8 , 4);
