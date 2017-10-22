@@ -56,9 +56,6 @@ public class LightLocalization extends Thread {
 		// the light sensor will cross 4 black lines
 		adjustRobotStartingPosition();
 
-		// navigate to 0,0 to perform light localization
-		nav.travelTo(0, 0);
-
 		// set the robot wheel's rotation speed to both motors
 		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
 		rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
@@ -137,7 +134,7 @@ public class LightLocalization extends Thread {
 			// storing the current value, to be able to get the derivative on
 			// the next iteration
 			oldValue = value;
-
+			System.out.println(diff);
 			if (diff < derivativeThreshold && filterCounter == 0) {
 				Sound.beep();
 				filterCounter++;
@@ -178,33 +175,50 @@ public class LightLocalization extends Thread {
 	 */
 	private void adjustRobotStartingPosition() {
 
-		// This method gets the data from the light sensor when the robot is
-		// moving forward, and returns when a black line is detected
-		detectBlackLine();
-		// TODO make this work in all corners
-		// odometer.setY(ZiplineLab.initialX);
-		odometer.setY(ZiplineLab.BOT_LENGTH); // set to distance btwn wheels and sensor
-
-		// rightMotor.stop();
-		// leftMotor.stop();
-
-		// Move the robot backwards 1.5 * its center distance
-		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), true);
-		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), false);
+		// lol fuck all that, it's way to slow
+		// implementing jeremy's method
 
 		// Set the wheel's rotation speed to ROTATESPEED
 		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
 		rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+		// Rotate the robot by 45 degrees
+		leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 45), true);
+		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 45), false);
 
-		// Rotate the robot by 90 degrees
-		leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 90), true);
-		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 90), false);
-
-		// Move forward, and return when a black line is detected
+		// drive forward until line is detected
 		detectBlackLine();
-		// TODO make this work in all corners
-		// odometer.setX(ZiplineLab.initialY);
-		odometer.setX(ZiplineLab.BOT_LENGTH);// set to distance btwn wheels and sensor
+
+		// This method gets the data from the light sensor when the robot is
+		// moving forward, and returns when a black line is detected
+		// detectBlackLine();
+		// // TODO make this work in all corners
+		// // odometer.setY(ZiplineLab.initialX);
+		// odometer.setY(ZiplineLab.BOT_LENGTH); // set to distance btwn wheels and
+		// sensor
+		//
+		// // rightMotor.stop();
+		// // leftMotor.stop();
+		//
+		// Move the robot backwards 1.5 * its center distance
+		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), true);
+		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), false);
+		//
+		// // Set the wheel's rotation speed to ROTATESPEED
+		// leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+		// rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+		//
+		// // Rotate the robot by 90 degrees
+		// leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 90),
+		// true);
+		// rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK,
+		// 90), false);
+		//
+		// // Move forward, and return when a black line is detected
+		// detectBlackLine();
+		// // TODO make this work in all corners
+		// // odometer.setX(ZiplineLab.initialY);
+		// odometer.setX(ZiplineLab.BOT_LENGTH);// set to distance btwn wheels and
+		// sensor
 
 		// may have to stop motors here
 		// rightMotor.stop();
