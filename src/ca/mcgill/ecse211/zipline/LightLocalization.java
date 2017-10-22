@@ -35,8 +35,6 @@ public class LightLocalization extends Thread {
 	private double x, y;
 	private double deltaThetaY;
 
-	private Navigation navigation;
-
 	public LightLocalization(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, Odometer odometer,
 			Navigation nav) {
 		this.leftMotor = leftMotor;
@@ -74,14 +72,16 @@ public class LightLocalization extends Thread {
 		determineLocalizationAngles();
 
 		// turn and travel to (0, 0) which is the first intersection
-		travelToDestination(0, 0);
+		correctOdometer();
+
+		nav.travelTo(0, 0);
 
 		// wait until the robot reached (0 ,0)
 		while ((rightMotor.isMoving() && leftMotor.isMoving()))
 			;
 
 		// let the robot head north
-		navigation.turnTo(-odometer.getTheta());
+		nav.turnTo(-odometer.getTheta());
 
 	}
 
@@ -95,7 +95,7 @@ public class LightLocalization extends Thread {
 	 * @param xdestination
 	 * @param ydestination
 	 */
-	private void travelToDestination(int xdestination, int ydestination) {
+	private void correctOdometer() {
 
 		thetay = yminus - yplus;
 		thetax = xplus - xminus;
@@ -108,7 +108,6 @@ public class LightLocalization extends Thread {
 		odometer.setY(y);
 		odometer.setTheta(odometer.getTheta() + deltaThetaY);
 
-		navigation.travelTo(xdestination, ydestination);
 	}
 
 	/**
@@ -182,10 +181,16 @@ public class LightLocalization extends Thread {
 		// This method gets the data from the light sensor when the robot is
 		// moving forward, and returns when a black line is detected
 		detectBlackLine();
+		// TODO make this work in all corners
+		// odometer.setY(ZiplineLab.initialX);
+		odometer.setY(ZiplineLab.BOT_LENGTH); // set to distance btwn wheels and sensor
+
+		// rightMotor.stop();
+		// leftMotor.stop();
 
 		// Move the robot backwards 1.5 * its center distance
-		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * CENTERDISTANCE), true);
-		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * CENTERDISTANCE), false);
+		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), true);
+		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), false);
 
 		// Set the wheel's rotation speed to ROTATESPEED
 		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
@@ -197,8 +202,13 @@ public class LightLocalization extends Thread {
 
 		// Move forward, and return when a black line is detected
 		detectBlackLine();
+		// TODO make this work in all corners
+		// odometer.setX(ZiplineLab.initialY);
+		odometer.setX(ZiplineLab.BOT_LENGTH);// set to distance btwn wheels and sensor
 
 		// may have to stop motors here
+		// rightMotor.stop();
+		// leftMotor.stop();
 
 		/*
 		 * // Move the robot backwards 1.5 * its center distance

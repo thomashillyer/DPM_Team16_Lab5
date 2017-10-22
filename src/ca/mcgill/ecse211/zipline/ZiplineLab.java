@@ -27,13 +27,13 @@ public class ZiplineLab {
 	protected static final double TRACK = 14.8;
 
 	protected static final int ROTATIONSPEED = 100;
-	protected static final int ACCELERATION = 50;
+	protected static final int ACCELERATION = 1000;
 	protected static final int FORWARDSPEED = 150;
 
 	private static final int FILTER_OUT = 23;
 	private static int filterControl;
 
-	protected static final double robotLength = 14.3;
+	protected static final double BOT_LENGTH = 14.3;
 
 	protected static final double TILE_LENGTH = 30.48;
 

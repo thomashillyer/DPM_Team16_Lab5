@@ -7,7 +7,7 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
 public class UltrasonicLocalization extends Thread implements UltrasonicController {
 
-	private final int HORIZONTAL_CONST = 40;
+	private final int HORIZONTAL_CONST = 35;
 	private final int HORIZONTAL_MARGIN = 2;
 
 	private static double alphaAngle = 0.0;

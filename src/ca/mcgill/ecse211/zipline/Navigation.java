@@ -70,14 +70,14 @@ public class Navigation extends Thread {
 
 		// travel to the next point, and don't wait until the action is
 		// complete. So the boolean in both rotate method should be true
-		leftMotor.setSpeed(FORWARD_SPEED);
-		rightMotor.setSpeed(FORWARD_SPEED);
+		leftMotor.setSpeed(ZiplineLab.FORWARDSPEED);
+		rightMotor.setSpeed(ZiplineLab.FORWARDSPEED);
 
 		rightMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), true);
 		leftMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), false);
 
-		leftMotor.stop(true);
-		rightMotor.stop(true);
+		// leftMotor.stop(true);
+		// rightMotor.stop(true);
 
 	}
 
@@ -94,8 +94,8 @@ public class Navigation extends Thread {
 	 *            The angle by which the cart should turn.
 	 */
 	public void turnTo(double theta) {
-		leftMotor.setSpeed(ROTATE_SPEED);
-		rightMotor.setSpeed(ROTATE_SPEED);
+		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+		rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
 
 		// adjusting the angle in order to have an optimal turn (a turn with the
 		// minimum angle)
