@@ -36,6 +36,12 @@ public class ZiplineLab {
 	protected static final double BOT_LENGTH = 14.3;
 
 	protected static final double TILE_LENGTH = 30.48;
+	
+	private static int x0;
+	private static int y0;
+	private static int xC;
+	private static int yC;
+	private static int corner;
 
 	public static void main(String[] args) {
 
@@ -64,7 +70,6 @@ public class ZiplineLab {
 		UltrasonicLocalization usLocal = new UltrasonicLocalization(leftMotor, rightMotor, odometer);
 		do {
 			printMenu(); // Set up the display on the EV3 screen
-
 			option = Button.waitForAnyPress();
 		} while (option != Button.ID_LEFT && option != Button.ID_RIGHT); // and wait for a button press. The button
 
@@ -101,16 +106,89 @@ public class ZiplineLab {
 			System.exit(-1);
 			break;
 		}
-		System.out.println("HI");
-		while (Button.waitForAnyPress() != Button.ID_ESCAPE)
-			;
+		
+		while (Button.waitForAnyPress() != Button.ID_ESCAPE);
 		System.exit(0);
 	}
 
 	private static void printMenu() {
+		boolean enter = false;
+		t.clear();
+		int counter = 0;
+//		t.drawString("X0: ", 0, 0);
+//		while(!enter) {
+//			int buttonPressed = Button.waitForAnyPress();
+//			if(buttonPressed != Button.ID_ENTER) {
+//				if(buttonPressed == Button.ID_DOWN && counter == 0) {
+//					counter = 0;
+//				}else if (buttonPressed == Button.ID_DOWN && counter > 0) {
+//					counter--;
+//				}else if (buttonPressed == Button.ID_UP && counter == 8) {
+//						counter = 8;
+//				} else if(counter < 8) {
+//						counter++;
+//				}
+//				t.drawInt(counter, 3, 0);
+//			} else {
+//				x0 = counter;
+//				enter = true;
+//			}
+//		}
+		
+		printXY(x0, "X0: ", 0, 0);
+		printXY(y0, "Y0: ", 0, 1);
+		printXY(xC, "XC: ", 0, 2);
+		printXY(yC, "YC: ", 0, 3);
+		
+		enter = false;
+		counter = 0;
+		t.drawString("Corner: ", 0, 4);
+		while(!enter) {
+			int buttonPressed = Button.waitForAnyPress();
+			if(buttonPressed != Button.ID_ENTER) {
+				if(buttonPressed == Button.ID_DOWN && counter == 0) {
+					counter = 0;
+				}else if (buttonPressed == Button.ID_DOWN && counter > 0) {
+					counter--;
+				}else if (buttonPressed == Button.ID_UP && counter == 3) {
+						counter = 3;
+				} else if(buttonPressed == Button.ID_UP && counter < 4) {
+						counter++;
+				}
+				t.drawInt(counter, 8 , 4);
+			} else {
+				corner = counter;
+				enter = true;
+			}
+		}	
+		
 		t.clear(); // the screen at initialization
 		t.drawString("left = fallingEdge", 0, 0);
 		t.drawString("right = risingEdge", 0, 1);
+	}
+	
+	public static void printXY(int coord, String disp, int x, int y) {
+		boolean enter = false;
+		int counter = 0;
+		t.drawString(disp, x, y);
+		while(!enter) {
+			int buttonPressed = Button.waitForAnyPress();
+			if(buttonPressed != Button.ID_ENTER) {
+				if(buttonPressed == Button.ID_DOWN && counter == 0) {
+					counter = 0;
+				}else if (buttonPressed == Button.ID_DOWN && counter > 0) {
+					counter--;
+				}else if (buttonPressed == Button.ID_UP && counter == 8) {
+						counter = 8;
+				} else if(buttonPressed == Button.ID_UP && counter < 8) {
+						counter++;
+				}
+				t.drawInt(counter, 3 , y);
+			} else {
+				coord = counter;
+				enter = true;
+			}
+		}	
 	}
 
 	protected static int convertDistance(double radius, double distance) {
