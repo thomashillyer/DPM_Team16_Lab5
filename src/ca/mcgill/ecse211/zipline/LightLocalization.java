@@ -85,7 +85,7 @@ public class LightLocalization extends Thread {
 		// while ((rightMotor.isMoving() && leftMotor.isMoving()));
 
 		// let the robot head north
-		nav.turnTo(-odometer.getTheta());
+		nav.turnTo(-(odometer.getTheta()+(8*Math.PI/180)));
 
 		// once robot adjusts to its relative (0,0)
 		// change the actual odometer x and y to what the board is supposed to be
@@ -112,6 +112,12 @@ public class LightLocalization extends Thread {
 		Button.waitForAnyPress();
 		
 		nav.travelTo(x0, y0);
+		
+		//travelTo zipline coordinate and move forward on it
+		Button.waitForAnyPress();
+		
+		nav.travelTo(xC, yC);
+		
 	}
 
 	/**
