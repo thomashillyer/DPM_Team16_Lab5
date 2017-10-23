@@ -23,8 +23,6 @@ public class LightLocalization extends Thread {
 	private Odometer odometer;
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
 
-	private static final double CENTERDISTANCE = 14;
-
 	// data
 	private int filterCounter = 0;
 	private float oldValue = 0;
@@ -34,7 +32,7 @@ public class LightLocalization extends Thread {
 	private double thetax, thetay;
 	private double x, y;
 	private double deltaThetaY;
-	
+
 	private int x0;
 	private int y0;
 	private int xC;
@@ -84,27 +82,34 @@ public class LightLocalization extends Thread {
 		nav.travelTo(0, 0);
 
 		// wait until the robot reached (0 ,0)
-		while ((rightMotor.isMoving() && leftMotor.isMoving()));
+		// while ((rightMotor.isMoving() && leftMotor.isMoving()));
 
 		// let the robot head north
 		nav.turnTo(-odometer.getTheta());
-		
-		//once robot adjusts to its relative (0,0)
-		//change the actual odometer x and y to what the board is supposed to be
-		//EX. if at corner 1 the relative (0,0) is actually (7,1)
-		if(corner == 0) {
+
+		// once robot adjusts to its relative (0,0)
+		// change the actual odometer x and y to what the board is supposed to be
+		// EX. if at corner 1 the relative (0,0) is actually (7,1)
+		if (corner == 0) {
 			odometer.setX(ZiplineLab.TILE_LENGTH);
 			odometer.setY(ZiplineLab.TILE_LENGTH);
-		}else if(corner == 1) {
-			odometer.setX(7*ZiplineLab.TILE_LENGTH);
+		} else if (corner == 1) {
+			odometer.setX(7 * ZiplineLab.TILE_LENGTH);
 			odometer.setY(ZiplineLab.TILE_LENGTH);
-		}else if(corner == 2) {
-			odometer.setX(7*ZiplineLab.TILE_LENGTH);
-			odometer.setY(7*ZiplineLab.TILE_LENGTH);
-		} else if(corner == 3) {
+			odometer.setTheta(3 * Math.PI / 2);
+		} else if (corner == 2) {
+			odometer.setX(7 * ZiplineLab.TILE_LENGTH);
+			odometer.setY(7 * ZiplineLab.TILE_LENGTH);
+			odometer.setTheta(Math.PI);
+		} else if (corner == 3) {
 			odometer.setX(ZiplineLab.TILE_LENGTH);
-			odometer.setY(7*ZiplineLab.TILE_LENGTH);
+			odometer.setY(7 * ZiplineLab.TILE_LENGTH);
+			odometer.setTheta(Math.PI / 2);
 		}
+
+		System.out.println("X0: " + x0 + " Y0: " + y0);
+
+		Button.waitForAnyPress();
 		
 		nav.travelTo(x0, y0);
 	}
@@ -124,8 +129,8 @@ public class LightLocalization extends Thread {
 		thetay = yminus - yplus;
 		thetax = xplus - xminus;
 
-		x = -CENTERDISTANCE * Math.cos(thetay / 2.0);
-		y = -CENTERDISTANCE * Math.cos(thetax / 2.0);
+		x = -ZiplineLab.BOT_LENGTH * Math.cos(thetay / 2.0);
+		y = -ZiplineLab.BOT_LENGTH * Math.cos(thetax / 2.0);
 		deltaThetaY = (Math.PI / 2.0) - yminus + Math.PI + (thetay / 2.0);
 
 		odometer.setX(x);
@@ -161,7 +166,8 @@ public class LightLocalization extends Thread {
 			// storing the current value, to be able to get the derivative on
 			// the next iteration
 			oldValue = value;
-			System.out.println(diff);
+			// System.out.println(diff);
+			System.out.println();
 			if (diff < derivativeThreshold && filterCounter == 0) {
 				Sound.beep();
 				filterCounter++;
@@ -227,8 +233,8 @@ public class LightLocalization extends Thread {
 		// // leftMotor.stop();
 		//
 		// Move the robot backwards 1.5 * its center distance
-		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), true);
-		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.5 * ZiplineLab.BOT_LENGTH), false);
+		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.3 * ZiplineLab.BOT_LENGTH), true);
+		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.3 * ZiplineLab.BOT_LENGTH), false);
 		//
 		// // Set the wheel's rotation speed to ROTATESPEED
 		// leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
@@ -292,7 +298,8 @@ public class LightLocalization extends Thread {
 			// storing the current value, to be able to get the derivative on
 			// the next iteration
 			oldValue = value;
-			System.out.println(diff);
+			// System.out.println(diff);
+			System.out.println();
 			if (diff < derivativeThreshold) {
 				Sound.beep();
 				break;

@@ -76,8 +76,8 @@ public class Navigation extends Thread {
 		rightMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), true);
 		leftMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), false);
 
-		// leftMotor.stop(true);
-		// rightMotor.stop(true);
+		leftMotor.stop(true);
+		rightMotor.stop(true);
 
 	}
 

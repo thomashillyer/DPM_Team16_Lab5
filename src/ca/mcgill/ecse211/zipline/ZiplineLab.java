@@ -36,12 +36,12 @@ public class ZiplineLab {
 	protected static final double BOT_LENGTH = 14.3;
 
 	protected static final double TILE_LENGTH = 30.48;
-	
-	private static int x0;
-	private static int y0;
-	private static int xC;
-	private static int yC;
-	private static int corner;
+
+	private static int x0 = 0;
+	private static int y0 = 0;
+	private static int xC = 0;
+	private static int yC = 0;
+	private static int corner = 0;
 
 	public static void main(String[] args) {
 
@@ -58,10 +58,6 @@ public class ZiplineLab {
 
 		Navigation nav = new Navigation(odometer, leftMotor, rightMotor);
 
-		// LightLocalizer lu = new LightLocalizer(odometer, leftMotor, rightMotor, nav);
-		int[] points = {x0,y0,xC,yC,corner};
-		LightLocalization lightLocal = new LightLocalization(leftMotor, rightMotor, odometer, nav, points);
-
 		// LightPoller lPoller = new LightPoller(lu);
 
 		// UltrasonicLocalizer ul = new UltrasonicLocalizer(odometer, lu, lPoller,
@@ -73,6 +69,10 @@ public class ZiplineLab {
 			printMenu(); // Set up the display on the EV3 screen
 			option = Button.waitForAnyPress();
 		} while (option != Button.ID_LEFT && option != Button.ID_RIGHT); // and wait for a button press. The button
+
+		// LightLocalizer lu = new LightLocalizer(odometer, leftMotor, rightMotor, nav);
+		int[] points = { x0, y0, xC, yC, corner };
+		LightLocalization lightLocal = new LightLocalization(leftMotor, rightMotor, odometer, nav, points);
 
 		switch (option) {
 		case Button.ID_LEFT:
@@ -107,8 +107,9 @@ public class ZiplineLab {
 			System.exit(-1);
 			break;
 		}
-		
-		while (Button.waitForAnyPress() != Button.ID_ESCAPE);
+
+		while (Button.waitForAnyPress() != Button.ID_ESCAPE)
+			;
 		System.exit(0);
 	}
 
@@ -116,61 +117,62 @@ public class ZiplineLab {
 		boolean enter = false;
 		t.clear();
 		int counter = 0;
-		
-		printXY(x0, "X0: ", 0, 0);
-		printXY(y0, "Y0: ", 0, 1);
-		printXY(xC, "XC: ", 0, 2);
-		printXY(yC, "YC: ", 0, 3);
-		
+
+		x0 = printXY("X0: ", 0, 0);
+		y0 = printXY("Y0: ", 0, 1);
+		xC = printXY("XC: ", 0, 2);
+		yC = printXY("YC: ", 0, 3);
+
 		enter = false;
 		counter = 0;
 		t.drawString("Corner: ", 0, 4);
-		while(!enter) {
+		while (!enter) {
 			int buttonPressed = Button.waitForAnyPress();
-			if(buttonPressed != Button.ID_ENTER) {
-				if(buttonPressed == Button.ID_DOWN && counter == 0) {
+			if (buttonPressed != Button.ID_ENTER) {
+				if (buttonPressed == Button.ID_DOWN && counter == 0) {
 					counter = 0;
-				}else if (buttonPressed == Button.ID_DOWN && counter > 0) {
+				} else if (buttonPressed == Button.ID_DOWN && counter > 0) {
 					counter--;
-				}else if (buttonPressed == Button.ID_UP && counter == 3) {
-						counter = 3;
-				} else if(buttonPressed == Button.ID_UP && counter < 3) {
-						counter++;
+				} else if (buttonPressed == Button.ID_UP && counter == 3) {
+					counter = 3;
+				} else if (buttonPressed == Button.ID_UP && counter < 3) {
+					counter++;
 				}
-				t.drawInt(counter, 8 , 4);
+				t.drawInt(counter, 8, 4);
 			} else {
 				corner = counter;
 				enter = true;
 			}
-		}	
-		
+		}
+
 		t.clear(); // the screen at initialization
 		t.drawString("left = fallingEdge", 0, 0);
 		t.drawString("right = risingEdge", 0, 1);
 	}
-	
-	public static void printXY(int coord, String disp, int x, int y) {
+
+	public static int printXY(String disp, int x, int y) {
 		boolean enter = false;
 		int counter = 0;
 		t.drawString(disp, x, y);
-		while(!enter) {
+		while (!enter) {
 			int buttonPressed = Button.waitForAnyPress();
-			if(buttonPressed != Button.ID_ENTER) {
-				if(buttonPressed == Button.ID_DOWN && counter == 0) {
+			if (buttonPressed != Button.ID_ENTER) {
+				if (buttonPressed == Button.ID_DOWN && counter == 0) {
 					counter = 0;
-				}else if (buttonPressed == Button.ID_DOWN && counter > 0) {
+				} else if (buttonPressed == Button.ID_DOWN && counter > 0) {
 					counter--;
-				}else if (buttonPressed == Button.ID_UP && counter == 8) {
-						counter = 8;
-				} else if(buttonPressed == Button.ID_UP && counter < 8) {
-						counter++;
+				} else if (buttonPressed == Button.ID_UP && counter == 8) {
+					counter = 8;
+				} else if (buttonPressed == Button.ID_UP && counter < 8) {
+					counter++;
 				}
-				t.drawInt(counter, 3 , y);
+				t.drawInt(counter, 3, y);
 			} else {
-				coord = counter;
 				enter = true;
+				break;
 			}
-		}	
+		}
+		return counter;
 	}
 
 	protected static int convertDistance(double radius, double distance) {
