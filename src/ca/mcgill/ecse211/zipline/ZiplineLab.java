@@ -26,7 +26,7 @@ public class ZiplineLab {
 
   // Values based on 360 degree turn test
   protected static final double WHEEL_RADIUS = 2.1;
-  protected static final double TRACK = 14.8; // 14.8
+  protected static final double TRACK = 14.8; 
 
   protected static final int ROTATIONSPEED = 100;
   protected static final int ACCELERATION = 1000;
@@ -107,7 +107,7 @@ public class ZiplineLab {
         UltrasonicPoller usPoll = new UltrasonicPoller(usSensor, usData, usLocal);
         odometer.start();
         usPoll.start();
-        odoDispl.start();
+       // odoDispl.start();
         screen.clear();
         usLocal.start();
         Button.waitForAnyPress();

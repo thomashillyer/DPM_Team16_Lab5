@@ -77,7 +77,7 @@ public class LightLocalization extends Thread {
 		determineLocalizationAngles();
 
 		// turn and travel to (0, 0) which is the first intersection
-		correctOdometer();
+		correctOdometer(0, 0);
 
 		nav.travelTo(0, 0);
 
@@ -85,7 +85,7 @@ public class LightLocalization extends Thread {
 		// while ((rightMotor.isMoving() && leftMotor.isMoving()));
 
 		// let the robot head north
-		nav.turnTo(-(odometer.getTheta()+(8*Math.PI/180)));
+		nav.turnTo(-(odometer.getTheta() + (8 * Math.PI / 180)));
 
 		// once robot adjusts to its relative (0,0)
 		// change the actual odometer x and y to what the board is supposed to be
@@ -110,14 +110,122 @@ public class LightLocalization extends Thread {
 		System.out.println("X0: " + x0 + " Y0: " + y0);
 
 		Button.waitForAnyPress();
-		
+
 		nav.travelTo(x0, y0);
-		
-		//travelTo zipline coordinate and move forward on it
+
+		// travelTo zipline coordinate and move forward on it
 		Button.waitForAnyPress();
+
+		leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), true);
+		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), true);
+
+		// while rotating, get the angles which are used to correct the robot's
+		// position and orientation
+		secondLocalization();
+
+		// turn and travel to (0, 0) which is the first intersection
+		correctOdometer(x0 * ZiplineLab.TILE_LENGTH, y0 * ZiplineLab.TILE_LENGTH);
+
+		nav.travelTo(x0, y0);
+
+		// wait until the robot reached (0 ,0)
+		// while ((rightMotor.isMoving() && leftMotor.isMoving()));
+
+		// let the robot head north
+		nav.turnTo(-(odometer.getTheta()));
+
+	}
+
+	private void secondLocalization() {
+		double theta = odometer.getTheta();
+		lineCounter = 0;
 		
-		nav.travelTo(xC, yC);
-		
+		while (leftMotor.isMoving() && rightMotor.isMoving()) {
+			
+			// fetching the values from the color sensor
+			colorSensorValue.fetchSample(colorSensorData, 0);
+
+			// getting the value returned from the sensor, and multiply it by
+			// 1000 to scale
+			float value = colorSensorData[0] * 1000;
+
+			// computing the derivative at each point
+			float diff = value - oldValue;
+
+			// storing the current value, to be able to get the derivative on
+			// the next iteration
+			oldValue = value;
+			// System.out.println(diff);
+			System.out.println();
+			if (diff < derivativeThreshold && filterCounter == 0) {
+				
+				if(theta >= 0*Math.PI/180 && theta <= 90*Math.PI/180) {
+					if (lineCounter == 1) {
+						xminus = odometer.getTheta();
+
+					} else if (lineCounter == 2) {
+						yplus = odometer.getTheta();
+
+					} else if (lineCounter == 3) {
+						xplus = odometer.getTheta();
+
+					} else if (lineCounter == 4) {
+						yminus = odometer.getTheta();
+					}
+				}
+				
+				else if(theta > 90*Math.PI/180 && theta <= 180*Math.PI/180) {
+					if (lineCounter == 1) {
+						yplus = odometer.getTheta();
+
+					} else if (lineCounter == 2) {
+						xplus = odometer.getTheta();
+
+					} else if (lineCounter == 3) {
+						yminus = odometer.getTheta();
+
+					} else if (lineCounter == 4) {
+						xminus = odometer.getTheta();
+					}
+				}
+				
+				else if(theta > 180*Math.PI/180 && theta <= 270*Math.PI/180) {
+					if (lineCounter == 1) {
+						xplus = odometer.getTheta();
+
+					} else if (lineCounter == 2) {
+						yminus = odometer.getTheta();
+
+					} else if (lineCounter == 3) {
+						xminus = odometer.getTheta();
+
+					} else if (lineCounter == 4) {
+						xplus = odometer.getTheta();
+					}
+				}
+				
+				else if((theta >270*Math.PI/180 && theta < 360*Math.PI/180)) {
+					if (lineCounter == 1) {
+						yminus = odometer.getTheta();
+
+					} else if (lineCounter == 2) {
+						xminus = odometer.getTheta();
+
+					} else if (lineCounter == 3) {
+						yplus = odometer.getTheta();
+
+					} else if (lineCounter == 4) {
+						xplus = odometer.getTheta();
+					}
+				}
+
+			} else if (diff < derivativeThreshold && filterCounter > 0) {
+				filterCounter++;
+			} else if (diff > derivativeThreshold) {
+				filterCounter = 0;
+			}
+
+		}
 	}
 
 	/**
@@ -130,17 +238,17 @@ public class LightLocalization extends Thread {
 	 * @param xdestination
 	 * @param ydestination
 	 */
-	private void correctOdometer() {
+	private void correctOdometer(double x, double y) {
 
 		thetay = yminus - yplus;
 		thetax = xplus - xminus;
 
-		x = -ZiplineLab.BOT_LENGTH * Math.cos(thetay / 2.0);
-		y = -ZiplineLab.BOT_LENGTH * Math.cos(thetax / 2.0);
+		this.x = -ZiplineLab.BOT_LENGTH * Math.cos(thetay / 2.0) + x;
+		this.y = -ZiplineLab.BOT_LENGTH * Math.cos(thetax / 2.0) + y;
 		deltaThetaY = (Math.PI / 2.0) - yminus + Math.PI + (thetay / 2.0);
 
-		odometer.setX(x);
-		odometer.setY(y);
+		odometer.setX(this.x);
+		odometer.setY(this.y);
 		odometer.setTheta(odometer.getTheta() + deltaThetaY);
 
 	}
@@ -157,7 +265,7 @@ public class LightLocalization extends Thread {
 	 * respectively).
 	 */
 	private void determineLocalizationAngles() {
-
+		lineCounter = 0;
 		while (leftMotor.isMoving() && rightMotor.isMoving()) {
 			// fetching the values from the color sensor
 			colorSensorValue.fetchSample(colorSensorData, 0);
@@ -190,7 +298,6 @@ public class LightLocalization extends Thread {
 
 				} else if (lineCounter == 4) {
 					yminus = odometer.getTheta();
-
 				}
 			} else if (diff < derivativeThreshold && filterCounter > 0) {
 				filterCounter++;
@@ -239,8 +346,8 @@ public class LightLocalization extends Thread {
 		// // leftMotor.stop();
 		//
 		// Move the robot backwards 1.5 * its center distance
-		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.3 * ZiplineLab.BOT_LENGTH), true);
-		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.3 * ZiplineLab.BOT_LENGTH), false);
+		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.15 * ZiplineLab.BOT_LENGTH), true);
+		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.15 * ZiplineLab.BOT_LENGTH), false);
 		//
 		// // Set the wheel's rotation speed to ROTATESPEED
 		// leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
