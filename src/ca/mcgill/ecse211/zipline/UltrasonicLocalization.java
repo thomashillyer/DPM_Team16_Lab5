@@ -5,7 +5,7 @@ import ca.mcgill.ecse211.zipline.UltrasonicController;
 import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
-public class UltrasonicLocalization extends Thread implements UltrasonicController {
+public class UltrasonicLocalization implements UltrasonicController {
 
 	private final int HORIZONTAL_CONST = 35;
 	private final int HORIZONTAL_MARGIN = 2;
@@ -18,6 +18,7 @@ public class UltrasonicLocalization extends Thread implements UltrasonicControll
 	private int previousDistance;
 	private int filterControl;
 	private static final int FILTER_OUT = 10;
+	private int counter = 0;
 
 	private Odometer odometer;
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
@@ -43,7 +44,7 @@ public class UltrasonicLocalization extends Thread implements UltrasonicControll
 	 * uses both angles to determine by how much the robot should turn to make it
 	 * face north (0 degrees)
 	 */
-	public void run() {
+	protected void localize() {
 
 		leftMotor.stop();
 		leftMotor.setAcceleration(ZiplineLab.ACCELERATION);
@@ -67,15 +68,17 @@ public class UltrasonicLocalization extends Thread implements UltrasonicControll
 		while ((rightMotor.isMoving() && leftMotor.isMoving())) {
 
 			if (!fallingEdgeDetected && (this.distanceUS <= HORIZONTAL_CONST + HORIZONTAL_MARGIN)
-					&& (this.distanceUS < this.previousDistance)) {
+					&& (this.distanceUS < this.previousDistance) && counter == 0) {
 				alphaAngle = odometer.getTheta();
 				Sound.beep();
 				fallingEdgeDetected = true;
+				counter++;
 
 			} else if (fallingEdgeDetected && (this.distanceUS > HORIZONTAL_CONST - HORIZONTAL_MARGIN)
-					&& (this.distanceUS > this.previousDistance)) {
+					&& (this.distanceUS > this.previousDistance) && counter == 1) {
 				betaAngle = odometer.getTheta();
 				Sound.beep();
+				counter++;
 				fallingEdgeDetected = false;
 			}
 		}

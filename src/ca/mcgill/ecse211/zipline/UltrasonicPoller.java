@@ -6,6 +6,7 @@ public class UltrasonicPoller extends Thread {
 	private SampleProvider us;
 	private UltrasonicLocalization ul;
 	private float[] usData;
+	private volatile boolean kill = false;
 
 	// simple poller for getting samples for ultrasonic sensor
 	public UltrasonicPoller(SampleProvider us, float[] usData, UltrasonicLocalization ul) {
@@ -16,7 +17,7 @@ public class UltrasonicPoller extends Thread {
 
 	public void run() {
 		int distance;
-		while (true) {
+		while (!kill) {
 			us.fetchSample(usData, 0); // acquire data
 			distance = (int) (usData[0] * 100.0); // extract from buffer, cast to int
 			ul.processUSData(distance); // now take action depending on value
@@ -25,6 +26,10 @@ public class UltrasonicPoller extends Thread {
 			} catch (Exception e) {
 			} // Poor man's timed sampling
 		}
+	}
+	
+	protected void killTask() {
+		kill = true;
 	}
 
 }

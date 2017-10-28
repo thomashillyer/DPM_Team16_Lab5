@@ -4,12 +4,13 @@ import lejos.hardware.Button;
 import lejos.hardware.Sound;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
+import lejos.hardware.motor.EV3MediumRegulatedMotor;
 import lejos.hardware.port.Port;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.hardware.sensor.SensorModes;
 import lejos.robotics.SampleProvider;
 
-public class LightLocalization extends Thread {
+public class LightLocalization {
 
 	private static final Port lightSampler = LocalEV3.get().getPort("S2");
 
@@ -22,7 +23,7 @@ public class LightLocalization extends Thread {
 
 	private Odometer odometer;
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
-
+	private EV3MediumRegulatedMotor sensorMotor;
 	// data
 	private int filterCounter = 0;
 	private float oldValue = 0;
@@ -39,10 +40,18 @@ public class LightLocalization extends Thread {
 	private int yC;
 	private int corner;
 
-	public LightLocalization(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, Odometer odometer,
-			Navigation nav, int[] points) {
+	private double currX = 0.0;
+	private double currY = 0.0;
+	private double currTheta = 0.0;
+	
+	private boolean detectSingleLine = false;
+	private boolean detectFourLines = false;
+
+	public LightLocalization(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
+			EV3MediumRegulatedMotor sensorMotor, Odometer odometer, Navigation nav, int[] points) {
 		this.leftMotor = leftMotor;
 		this.rightMotor = rightMotor;
+		this.sensorMotor = sensorMotor;
 		this.odometer = odometer;
 		this.nav = nav;
 		x0 = points[0];
@@ -52,8 +61,57 @@ public class LightLocalization extends Thread {
 		corner = points[4];
 	}
 
-	public void run() {
-		Button.waitForAnyPress();
+	protected void processData() {
+		long correctionStart, correctionEnd;
+		correctionStart = System.currentTimeMillis();
+
+		// fetching the values from the color sensor
+		colorSensorValue.fetchSample(colorSensorData, 0);
+
+		// getting the value returned from the sensor, and multiply it by
+		// 1000 to scale
+		float value = colorSensorData[0] * 1000;
+
+		// computing the derivative at each point
+		float diff = value - oldValue;
+
+		// storing the current value, to be able to get the derivative on
+		// the next iteration
+		oldValue = value;
+		if (diff < derivativeThreshold && filterCounter == 0) {
+			filterCounter++;
+			Sound.beep();
+			if(detectFourLines) {
+				lineCounter++;
+
+				if (lineCounter == 1) {
+					System.out.println(1 + " odo: " + odometer.getTheta());
+					xminus = odometer.getTheta();
+
+				} else if (lineCounter == 2) {
+					System.out.println(2+ " odo: " + odometer.getTheta());
+					yplus = odometer.getTheta();
+
+				} else if (lineCounter == 3) {
+					System.out.println(3+ " odo: " + odometer.getTheta());
+					xplus = odometer.getTheta();
+
+				} else if (lineCounter == 4) {
+					System.out.println(4+ " odo: " + odometer.getTheta());
+					yminus = odometer.getTheta();
+				}
+			}else if(detectSingleLine) {
+				detectSingleLine = false;
+			}
+		} else if (diff < derivativeThreshold && filterCounter > 0) {
+			filterCounter++;
+		} else if (diff > derivativeThreshold) {
+			filterCounter = 0;
+		}
+	}
+
+	protected void cornerLocalization() {
+		detectSingleLine = true;
 		// Set the acceleration of both motor
 		leftMotor.stop();
 		leftMotor.setAcceleration(ZiplineLab.ACCELERATION);
@@ -68,163 +126,58 @@ public class LightLocalization extends Thread {
 		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
 		rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
 
+		detectFourLines = true;
+		
 		// rotate the robot 360 degrees
 		leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), true);
-		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), true);
-
-		// while rotating, get the angles which are used to correct the robot's
-		// position and orientation
-		determineLocalizationAngles();
-
-		// turn and travel to (0, 0) which is the first intersection
-		correctOdometer(0, 0);
-
+		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), false);
+		
+		detectFourLines = false;
+		
+		correctOdometer();
 		nav.travelTo(0, 0);
-
-		// wait until the robot reached (0 ,0)
-		// while ((rightMotor.isMoving() && leftMotor.isMoving()));
-
-		// let the robot head north
 		nav.turnTo(-(odometer.getTheta() + (8 * Math.PI / 180)));
-
-		// once robot adjusts to its relative (0,0)
-		// change the actual odometer x and y to what the board is supposed to be
-		// EX. if at corner 1 the relative (0,0) is actually (7,1)
-		if (corner == 0) {
-			odometer.setX(ZiplineLab.TILE_LENGTH);
-			odometer.setY(ZiplineLab.TILE_LENGTH);
-		} else if (corner == 1) {
-			odometer.setX(7 * ZiplineLab.TILE_LENGTH);
-			odometer.setY(ZiplineLab.TILE_LENGTH);
-			odometer.setTheta(3 * Math.PI / 2);
-		} else if (corner == 2) {
-			odometer.setX(7 * ZiplineLab.TILE_LENGTH);
-			odometer.setY(7 * ZiplineLab.TILE_LENGTH);
-			odometer.setTheta(Math.PI);
-		} else if (corner == 3) {
-			odometer.setX(ZiplineLab.TILE_LENGTH);
-			odometer.setY(7 * ZiplineLab.TILE_LENGTH);
-			odometer.setTheta(Math.PI / 2);
-		}
-
-		System.out.println("X0: " + x0 + " Y0: " + y0);
-
-		Button.waitForAnyPress();
-
-		nav.travelTo(x0, y0);
-
-		// travelTo zipline coordinate and move forward on it
-		Button.waitForAnyPress();
-
-		leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), true);
-		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 360), true);
-
-		// while rotating, get the angles which are used to correct the robot's
-		// position and orientation
-		secondLocalization();
-
-		// turn and travel to (0, 0) which is the first intersection
-		correctOdometer(x0 * ZiplineLab.TILE_LENGTH, y0 * ZiplineLab.TILE_LENGTH);
-
-		nav.travelTo(x0, y0);
-
-		// wait until the robot reached (0 ,0)
-		// while ((rightMotor.isMoving() && leftMotor.isMoving()));
-
-		// let the robot head north
-		nav.turnTo(-(odometer.getTheta()));
-
 	}
 
 	private void secondLocalization() {
 		double theta = odometer.getTheta();
 		lineCounter = 0;
-		
-		while (leftMotor.isMoving() && rightMotor.isMoving()) {
-			
-			// fetching the values from the color sensor
-			colorSensorValue.fetchSample(colorSensorData, 0);
 
-			// getting the value returned from the sensor, and multiply it by
-			// 1000 to scale
-			float value = colorSensorData[0] * 1000;
+		// fetching the values from the color sensor
+		colorSensorValue.fetchSample(colorSensorData, 0);
 
-			// computing the derivative at each point
-			float diff = value - oldValue;
+		// getting the value returned from the sensor, and multiply it by
+		// 1000 to scale
+		float value = colorSensorData[0] * 1000;
 
-			// storing the current value, to be able to get the derivative on
-			// the next iteration
-			oldValue = value;
-			// System.out.println(diff);
-			System.out.println();
-			if (diff < derivativeThreshold && filterCounter == 0) {
-				
-				if(theta >= 0*Math.PI/180 && theta <= 90*Math.PI/180) {
-					if (lineCounter == 1) {
-						xminus = odometer.getTheta();
+		// computing the derivative at each point
+		float diff = value - oldValue;
 
-					} else if (lineCounter == 2) {
-						yplus = odometer.getTheta();
+		// storing the current value, to be able to get the derivative on
+		// the next iteration
+		oldValue = value;
+		if (diff < derivativeThreshold && filterCounter == 0) {
+			Sound.beep();
+			filterCounter++;
+			lineCounter++;
 
-					} else if (lineCounter == 3) {
-						xplus = odometer.getTheta();
+			if (lineCounter == 1) {
+				yminus = odometer.getTheta();
 
-					} else if (lineCounter == 4) {
-						yminus = odometer.getTheta();
-					}
-				}
-				
-				else if(theta > 90*Math.PI/180 && theta <= 180*Math.PI/180) {
-					if (lineCounter == 1) {
-						yplus = odometer.getTheta();
+			} else if (lineCounter == 2) {
+				xminus = odometer.getTheta();
 
-					} else if (lineCounter == 2) {
-						xplus = odometer.getTheta();
+			} else if (lineCounter == 3) {
+				yplus = odometer.getTheta();
 
-					} else if (lineCounter == 3) {
-						yminus = odometer.getTheta();
-
-					} else if (lineCounter == 4) {
-						xminus = odometer.getTheta();
-					}
-				}
-				
-				else if(theta > 180*Math.PI/180 && theta <= 270*Math.PI/180) {
-					if (lineCounter == 1) {
-						xplus = odometer.getTheta();
-
-					} else if (lineCounter == 2) {
-						yminus = odometer.getTheta();
-
-					} else if (lineCounter == 3) {
-						xminus = odometer.getTheta();
-
-					} else if (lineCounter == 4) {
-						xplus = odometer.getTheta();
-					}
-				}
-				
-				else if((theta >270*Math.PI/180 && theta < 360*Math.PI/180)) {
-					if (lineCounter == 1) {
-						yminus = odometer.getTheta();
-
-					} else if (lineCounter == 2) {
-						xminus = odometer.getTheta();
-
-					} else if (lineCounter == 3) {
-						yplus = odometer.getTheta();
-
-					} else if (lineCounter == 4) {
-						xplus = odometer.getTheta();
-					}
-				}
-
-			} else if (diff < derivativeThreshold && filterCounter > 0) {
-				filterCounter++;
-			} else if (diff > derivativeThreshold) {
-				filterCounter = 0;
+			} else if (lineCounter == 4) {
+				xplus = odometer.getTheta();
 			}
 
+		} else if (diff < derivativeThreshold && filterCounter > 0) {
+			filterCounter++;
+		} else if (diff > derivativeThreshold) {
+			filterCounter = 0;
 		}
 	}
 
@@ -238,13 +191,17 @@ public class LightLocalization extends Thread {
 	 * @param xdestination
 	 * @param ydestination
 	 */
-	private void correctOdometer(double x, double y) {
-
+	private void correctOdometer() {
+		System.out.println("X- : " + xminus);
+		System.out.println("Y- : " + yminus);
+		System.out.println("X+ : " + xplus);
+		System.out.println("Y+ : " + yplus);
+		
 		thetay = yminus - yplus;
 		thetax = xplus - xminus;
 
-		this.x = -ZiplineLab.BOT_LENGTH * Math.cos(thetay / 2.0) + x;
-		this.y = -ZiplineLab.BOT_LENGTH * Math.cos(thetax / 2.0) + y;
+		this.x = -ZiplineLab.BOT_LENGTH * Math.cos(thetay / 2.0);
+		this.y = -ZiplineLab.BOT_LENGTH * Math.cos(thetax / 2.0);
 		deltaThetaY = (Math.PI / 2.0) - yminus + Math.PI + (thetay / 2.0);
 
 		odometer.setX(this.x);
@@ -253,59 +210,73 @@ public class LightLocalization extends Thread {
 
 	}
 
-	/**
-	 * while the robot is rotating on itself, get the measured values of the light
-	 * sensor. A black line is detected when the derivative less than a threshold.
-	 * When it is detected, a filter is added because sometimes, since the frequency
-	 * of the value returned by the robot is high, the derivative can be less than
-	 * the threshold for 2 or 3 consecutive returned values. This filter makes sure
-	 * that we enter the if statement only the first time the derivative is less
-	 * than threshold. Moreover, a line counter is added to determine which theta is
-	 * return by the odometer (theta (x-), theta (y+), theta (x+), and theta (y-)
-	 * respectively).
-	 */
-	private void determineLocalizationAngles() {
-		lineCounter = 0;
-		while (leftMotor.isMoving() && rightMotor.isMoving()) {
-			// fetching the values from the color sensor
-			colorSensorValue.fetchSample(colorSensorData, 0);
+	public void travelTo(double x, double y) {
 
-			// getting the value returned from the sensor, and multiply it by
-			// 1000 to scale
-			float value = colorSensorData[0] * 1000;
+		// get the current position and rotation of the robot, based on its
+		// starting point
+		currX = odometer.getX();
+		currY = odometer.getY();
+		currTheta = odometer.getTheta();
 
-			// computing the derivative at each point
-			float diff = value - oldValue;
+		// calculating the information needed (destination - current) for both y
+		// and x, in order to calculate the minimum angle using arctan
+		double deltaX = (x * ZiplineLab.TILE_LENGTH) - currX;
+		double deltaY = (y * ZiplineLab.TILE_LENGTH) - currY;
 
-			// storing the current value, to be able to get the derivative on
-			// the next iteration
-			oldValue = value;
-			// System.out.println(diff);
-			System.out.println();
-			if (diff < derivativeThreshold && filterCounter == 0) {
-				Sound.beep();
-				filterCounter++;
-				lineCounter++;
+		// calculating the minimum angle using Math.atan2 method
+		double deltaTheta = Math.atan2(deltaX, deltaY) - currTheta;
 
-				if (lineCounter == 1) {
-					xminus = odometer.getTheta();
+		// rotate the robot towards its new way point
+		turnTo(deltaTheta);
 
-				} else if (lineCounter == 2) {
-					yplus = odometer.getTheta();
+		// calculate the distance to next point using the built in pythagore
+		// theorem
+		// TODO try Math.Pyth
+		double distToTravel = Math.pow(deltaX, 2) + Math.pow(deltaY, 2);
+		distToTravel = Math.sqrt(distToTravel);
 
-				} else if (lineCounter == 3) {
-					xplus = odometer.getTheta();
+		// travel to the next point, and don't wait until the action is
+		// complete. So the boolean in both rotate method should be true
+		leftMotor.setSpeed(ZiplineLab.FORWARDSPEED);
+		rightMotor.setSpeed(ZiplineLab.FORWARDSPEED);
 
-				} else if (lineCounter == 4) {
-					yminus = odometer.getTheta();
-				}
-			} else if (diff < derivativeThreshold && filterCounter > 0) {
-				filterCounter++;
-			} else if (diff > derivativeThreshold) {
-				filterCounter = 0;
-			}
+		rightMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), true);
+		leftMotor.rotate(convertDistance(ZiplineLab.WHEEL_RADIUS, distToTravel), false);
 
+		leftMotor.stop(true);
+		rightMotor.stop(true);
+
+	}
+
+	public void turnTo(double theta) {
+		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+		rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+
+		// adjusting the angle in order to have an optimal turn (a turn with the
+		// minimum angle)
+		if (theta <= -Math.PI) {
+			theta += Math.PI * 2;
+		} else if (theta > Math.PI) {
+			theta -= Math.PI * 2;
 		}
+
+		theta = theta * 180.0 / Math.PI;
+
+		// turn to the left if angle is negative
+		if (theta < 0) {
+			leftMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, -theta - (20 * Math.PI / 180.0)),
+					true);
+			rightMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, -theta - (20 * Math.PI / 180.0)),
+					false);
+		}
+		// turn to the right if angle is positive
+		else {
+			leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, theta - (10 * Math.PI / 180.0)),
+					true);
+			rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, theta - (10 * Math.PI / 180.0)),
+					false);
+		}
+
 	}
 
 	/**
@@ -320,105 +291,25 @@ public class LightLocalization extends Thread {
 	 * intersection.
 	 */
 	private void adjustRobotStartingPosition() {
-
-		// lol fuck all that, it's way to slow
-		// implementing jeremy's method
-
 		// Set the wheel's rotation speed to ROTATESPEED
 		leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
 		rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
+
 		// Rotate the robot by 45 degrees
 		leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 45), true);
 		rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 45), false);
 
-		// drive forward until line is detected
-		detectBlackLine();
-
-		// This method gets the data from the light sensor when the robot is
-		// moving forward, and returns when a black line is detected
-		// detectBlackLine();
-		// // TODO make this work in all corners
-		// // odometer.setY(ZiplineLab.initialX);
-		// odometer.setY(ZiplineLab.BOT_LENGTH); // set to distance btwn wheels and
-		// sensor
-		//
-		// // rightMotor.stop();
-		// // leftMotor.stop();
-		//
+		while(detectSingleLine) {
+			leftMotor.forward();
+			rightMotor.forward();
+		}
+		
+		leftMotor.stop(true);
+		rightMotor.stop(true);
+		
 		// Move the robot backwards 1.5 * its center distance
 		rightMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.15 * ZiplineLab.BOT_LENGTH), true);
 		leftMotor.rotate(-convertDistance(ZiplineLab.WHEEL_RADIUS, 1.15 * ZiplineLab.BOT_LENGTH), false);
-		//
-		// // Set the wheel's rotation speed to ROTATESPEED
-		// leftMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
-		// rightMotor.setSpeed(ZiplineLab.ROTATIONSPEED);
-		//
-		// // Rotate the robot by 90 degrees
-		// leftMotor.rotate(convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK, 90),
-		// true);
-		// rightMotor.rotate(-convertAngle(ZiplineLab.WHEEL_RADIUS, ZiplineLab.TRACK,
-		// 90), false);
-		//
-		// // Move forward, and return when a black line is detected
-		// detectBlackLine();
-		// // TODO make this work in all corners
-		// // odometer.setX(ZiplineLab.initialY);
-		// odometer.setX(ZiplineLab.BOT_LENGTH);// set to distance btwn wheels and
-		// sensor
-
-		// may have to stop motors here
-		// rightMotor.stop();
-		// leftMotor.stop();
-
-		/*
-		 * // Move the robot backwards 1.5 * its center distance
-		 * leftMotor.rotate(-convertDistance(RADIUS, 1.5 * CENTERDISTANCE), true);
-		 * rightMotor.rotate(-convertDistance(RADIUS, 1.5 * CENTERDISTANCE), false);
-		 * 
-		 * // Rotate the robot by 90 degrees leftMotor.setSpeed(ROTATESPEED);
-		 * rightMotor.setSpeed(ROTATESPEED);
-		 * 
-		 * // Rotate the robot by -90 degrees leftMotor.rotate(-convertAngle(RADIUS,
-		 * TRACK, 90), true); rightMotor.rotate(convertAngle(RADIUS, TRACK, 90), false);
-		 */
-	}
-
-	/**
-	 * This method makes the robot move forward. While moving, get the value
-	 * returned by the light sensor, compute the derivative, and if the value of the
-	 * derivative (diff) is than the threshold, a black line is detected. Beep and
-	 * break out of the loop when the black line is detected.
-	 */
-	private void detectBlackLine() {
-
-		leftMotor.setSpeed(ZiplineLab.FORWARDSPEED);
-		rightMotor.setSpeed(ZiplineLab.FORWARDSPEED);
-
-		leftMotor.forward();
-		rightMotor.forward();
-
-		while (leftMotor.isMoving() && rightMotor.isMoving()) {
-			// fetching the values from the color sensor
-			colorSensorValue.fetchSample(colorSensorData, 0);
-
-			// getting the value returned from the sensor, and multiply it by
-			// 1000 to scale
-			float value = colorSensorData[0] * 1000;
-
-			// computing the derivative at each point
-			float diff = value - oldValue;
-
-			// storing the current value, to be able to get the derivative on
-			// the next iteration
-			oldValue = value;
-			// System.out.println(diff);
-			System.out.println();
-			if (diff < derivativeThreshold) {
-				Sound.beep();
-				break;
-			}
-
-		}
 	}
 
 	private static int convertDistance(double radius, double distance) {
